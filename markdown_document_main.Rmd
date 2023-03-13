@@ -1,0 +1,266 @@
+---
+title: "How Does a Bike-Share Navigate Speedy Success?"
+author: "Jessica Espejo"
+date: "2023-02-07"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+This is an R Markdown document based in a Cyclistic bike-share analysis case study.
+
+## Scenario
+
+In this case study, I am a junior data analyst working in the marketing analyst team at Cyclistic, a bike-share company in Chicago.  
+The director of marketing believes the company’s future success depends on maximizing the number of annual memberships.  
+Therefore, *my team wants to understand how casual riders and annual members use Cyclistic bikes differently*. From these insights, my team will design a new marketing strategy to convert casual riders into annual members. But first, Cyclistic executives must approve your recommendations, so they must be backed up with compelling data insights and professional data visualizations.
+
+## About the company
+
+- In 2016, Cyclistic launched a successful bike-share offering. Since then, the program has grown to a fleet of 5,824 bicycles that are geotracked and locked into a network of 692 stations across Chicago. 
+- The bikes can be unlocked from one station and returned to any other station in the system anytime.
+- Until now, Cyclistic’s marketing strategy relied on building general awareness and appealing to broad consumer segments.
+- One approach that helped make these things possible was the flexibility of its pricing plans: single-ride passes, full-day passes, and annual memberships.
+- Customers who purchase single-ride or full-day passes are referred to as casual riders. Customers who purchase annual memberships are Cyclistic members.
+- Annual members are much more profitable than casual riders. 
+
+Although the pricing flexibility helps Cyclistic attract more customers, Moreno believes that maximizing the number of annual members will be key to future growth. Rather than creating a marketing campaign that targets all-new customers, Moreno believes there is a very good chance to convert casual riders into members. She notes that casual riders are already aware of the Cyclistic program and have chosen Cyclistic for their mobility needs. Moreno has set a clear goal: Design marketing strategies aimed at converting casual riders into annual members. To do that, however, *the marketing analyst team needs to better understand how annual members and casual riders differ, why casual riders would buy a membership, and how digital media could affect their marketing tactics*. Moreno and her team are interested in analyzing the Cyclistic historical bike trip data to identify trends.
+
+## Installing packages
+
+To make the case study analysis, the following packages must be installed:
+- **tidyverse**: A system of packages in R with a common design philosophy for data manipulation, exploration, and visualization
+- **modeest**: Provides estimators of the mode of univariate data or univariate distributions. 
+- **lubridate**: Functions to work with date-times and timespans (fast and user friendly parsing of date-time data, extraction and updating of components of a date-time), algebraic manipulation on date-time and time-span objects. The -**lubridate**: package has a consistent and memorable syntax that makes working with dates easy and fun.
+- **hydroTSM**: Time Series Management, Analysis, and Interpolation for Hydrological Modelling
+
+```{r installing_packages, results = FALSE, warning=FALSE}
+#install.packages("easypackages")
+library("easypackages")
+paq <- c("tidyverse", "modeest", "lubridate", "hydroTSM", "kableExtra", "reshape2")
+libraries(paq)
+```
+
+## Reading and importing monthly datasets
+
+CSV monthly databases are read from the selected path.
+We need to create our own function(x) to automate the performance of read_csv() function for each one of the imported databases
+
+
+```{r data_import}
+
+month_db <- list("january.csv", "february.csv", "march.csv", "april.csv", "may.csv", "june.csv", "july.csv", "august.csv", "september.csv", "october.csv", "november.csv", "december.csv")
+
+myfiles<-lapply(month_db, function(x){ 
+  read.table(unz(".\\monthly datasets\\monthly datasets.zip",x), header = TRUE, sep = ",")
+  })
+
+```
+
+
+
+```{r data_import2, echo=FALSE, eval=FALSE}
+#january <- read.csv(file = ".\\monthly datasets\\january.csv", colClasses = c("character","character","POSIXct","POSIXct","character","character","character","character","numeric","numeric","numeric","numeric","character"))
+```
+
+## Merging and cleaning datasets
+
+Merge monthly datasets in a full year dataset and verify the total number of rows
+
+```{r merging}
+year_2022 <- bind_rows(myfiles[1:12])
+```
+
+## Adding new columns: Ride length, Day of week, Ride month and Coordinates
+
+### Ride length
+```{r ride_length}
+year_2022$ride_length <- round(as.numeric(difftime(year_2022$ended_at, year_2022$started_at, units = "mins")),3)
+```
+
+### Day of week
+```{r day_of_week}
+year_2022$day_of_week <- wday(year_2022$started_at)
+```
+
+### Ride month
+```{r ride_month}
+year_2022$ride_month<- month(year_2022$started_at)
+```
+
+### Coordinates
+```{r coordinates}
+year_2022$start_lat <- as.character(round(year_2022$start_lat, 4))
+year_2022$start_lng <- as.character(round(year_2022$start_lng, 4))
+year_2022$end_lat <- as.character(round(year_2022$end_lat, 4))
+year_2022$end_lng <- as.character(round(year_2022$end_lng, 4))
+
+year_2022$start_coord <- paste(year_2022$start_lat, ",", year_2022$start_lng)
+year_2022$end_coord <- paste(year_2022$end_lat, year_2022$end_lng)
+```
+
+### Cleaning - Start station names
+```{r start_station_names, warning=FALSE}
+year_2022$start_station_name <- str_trim(year_2022$start_station_name)
+
+year_2022 <- year_2022 %>%
+  mutate(start_station_name = recode(start_station_name, "  " = " ", "Public Rack - " = "", "Pubic Rack - " = "", "City Rack - " = "", "Base - " = "", "Divvy Valet - Oakwood Beach" = "Lake Park Ave & 56th St", "111th St - Morgan Park Metra" = "111th St Morgan Park Metra", "Pullman - Walmart" = "Walmart Supercenter" ))
+
+year_2022 <- year_2022 %>% separate(col = start_station_name, into = c("new_name","complemento1"), sep = ("-"))
+year_2022$start_station_name <- year_2022$new_name
+year_2022 <- select(year_2022, -complemento1, -new_name, -start_station_id, -start_lat, -start_lng)
+year_2022$start_station_name <- str_trim(year_2022$start_station_name)
+
+year_2022 <- year_2022 %>%
+  mutate(start_station_name = recode(start_station_name, "Ave N" = "Ave", "Ave S" = "Ave", "rd St E" = "rd St", "St N" = "St", "rd St W" = "rd St","rd St S" = "rd St", "[*]" = "", "(Temp)"  = ""))
+    
+year_2022 <- year_2022 %>%
+  mutate(start_station_name = recode(start_station_name, "N Shore Channel Trail & Argyle Ave" = "N Shore Channel Trail & Argyle St", "Whippie" = "Whipple", "Ewing Ave & 106th StW" = "Ewing Ave & 106th St", "Mt Greenwood Library N" = "Mt Greenwood Library", "Prairie Ave & Garfield Blvd N" = "Prairie Ave & Garfield Blvd", "Kedzie Ave & 61st Pl W" = "Kedzie Ave & 61st Pl"))
+
+year_2022 <- year_2022 %>%
+  mutate(start_station_name = recode(start_station_name, "(May)" = "", "(NU)" = "", "(Avalon Park)" = "", "Archer (Damen) Ave" = "Archer Ave", "2132 W Hubbard Warehouse" = "2132 W Hubbard", "California &" = "California Ave &", "Western Ave & 107th Pl" = "Western Ave & 107th St", "10557 S Western Ave" = "Western Ave & 106th St", "Ewing Ave & 96th St S" = "Ewing Ave & 96th St", "Vincennes Ave & 95th Pl" = "Vincennes Ave & 95th St", "Lafayette Ave & 87th St SW" = "Lafayette Ave & 87th St", "Halsted St & 63rd St" = "Halsted & 63rd", "Kedzie Ave & 61st Pl E" = "Kedzie Ave & 61st", "Lawndale & 63rd St" = "Lawndale Ave & 63rd St", "Kedzie Ave & 54th Pl" = "Kedzie Ave & 54th St", "Western Ave & 28th St" = "Western & 28th", "Malcolm X College Vaccination Site" = "Malcolm X College", "Kildare Ave & Division Ave" = "Kildare Ave & Division St", "Narragansett Ave & Fullerton Ave" = "Fullerton Ave & Narragansett Ave", "Broadway & Wilson Ave" ="Broadway & Wilson", "WEST CHI" = "WestChi", "Buckingham Fountain (Temp)" = "Buckingham Fountain"))
+```
+
+```{r start_station_summary, echo = FALSE, eval = FALSE}
+#start_station_summary <- year_2022 %>% group_by(start_coord, start_station_name) %>% summarise(n = n())
+#start_station_summary <- start_station_summary %>% group_by(start_station_name) %>% top_n(1, n) %>% arrange(start_station_name)
+#write.csv(start_station_summary, ".//RESULTS//start_station_summary.csv")
+
+```
+
+### Cleaning - End station names
+```{r end_station_names, warning=FALSE}
+year_2022$end_station_name <- str_trim(year_2022$end_station_name)
+
+year_2022 <- year_2022 %>%
+  mutate(end_station_name = recode(end_station_name, "  " = " ", "Public Rack - " = "", "Pubic Rack - " = "", "City Rack - " = "", "Base - " = "", "Divvy Valet - Oakwood Beach" = "Lake Park Ave & 56th St", "111th St - Morgan Park Metra" = "111th St Morgan Park Metra", "Pullman - Walmart" = "Walmart Supercenter" ))
+
+year_2022 <- year_2022 %>% separate(col = end_station_name, into = c("new_name","complemento1"), sep = ("-"))
+year_2022$end_station_name <- year_2022$new_name
+year_2022 <- select(year_2022, -complemento1, -new_name, -end_station_id, -end_lat, -end_lng)
+year_2022$end_station_name <- str_trim(year_2022$end_station_name)
+
+year_2022 <- year_2022 %>%
+  mutate(end_station_name = recode(end_station_name, "Ave N" = "Ave", "Ave S" = "Ave", "rd St E" = "rd St", "St N" = "St", "rd St W" = "rd St","rd St S" = "rd St", "[*]" = "", "(Temp)"  = ""))
+    
+year_2022 <- year_2022 %>%
+  mutate(end_station_name = recode(end_station_name, "N Shore Channel Trail & Argyle Ave" = "N Shore Channel Trail & Argyle St", "Whippie" = "Whipple", "Ewing Ave & 106th StW" = "Ewing Ave & 106th St", "Mt Greenwood Library N" = "Mt Greenwood Library", "Prairie Ave & Garfield Blvd N" = "Prairie Ave & Garfield Blvd", "Kedzie Ave & 61st Pl W" = "Kedzie Ave & 61st Pl"))
+
+year_2022 <- year_2022 %>%
+  mutate(end_station_name = recode(end_station_name, "(May)" = "", "(NU)" = "", "(Avalon Park)" = "", "Archer (Damen) Ave" = "Archer Ave", "2132 W Hubbard Warehouse" = "2132 W Hubbard", "California &" = "California Ave &", "Western Ave & 107th Pl" = "Western Ave & 107th St", "10557 S Western Ave" = "Western Ave & 106th St", "Ewing Ave & 96th St S" = "Ewing Ave & 96th St", "Vincennes Ave & 95th Pl" = "Vincennes Ave & 95th St", "Lafayette Ave & 87th St SW" = "Lafayette Ave & 87th St", "Halsted St & 63rd St" = "Halsted & 63rd", "Kedzie Ave & 61st Pl E" = "Kedzie Ave & 61st", "Lawndale & 63rd St" = "Lawndale Ave & 63rd St", "Kedzie Ave & 54th Pl" = "Kedzie Ave & 54th St", "Western Ave & 28th St" = "Western & 28th", "Malcolm X College Vaccination Site" = "Malcolm X College", "Kildare Ave & Division Ave" = "Kildare Ave & Division St", "Narragansett Ave & Fullerton Ave" = "Fullerton Ave & Narragansett Ave", "Broadway & Wilson Ave" ="Broadway & Wilson", "WEST CHI" = "WestChi", "Buckingham Fountain (Temp)" = "Buckingham Fountain"))
+```
+
+```{r end_station_summary, echo = FALSE, eval = FALSE}
+#end_station_summary <- year_2022 %>% group_by(end_coord, end_station_name) %>% summarise(n = n())
+#end_station_summary <- end_station_summary %>% group_by(end_station_name) %>% top_n(1, n) %>% arrange(end_station_name)
+#write.csv(end_station_summary, ".//RESULTS//end_station_summary.csv")
+
+```
+
+
+## Data filtering
+```{r filter, warning=FALSE}
+year_2022 <- select(year_2022, rideable_type, started_at, ended_at, start_station_name, start_coord, end_station_name,  end_coord, member_casual, ride_length, day_of_week, ride_month )
+
+year_2022v2 <- subset(year_2022, year_2022$ride_length > 0)
+```
+
+## Descriptive analysis
+
+The next calculations are made to get a better sense of the data layout. Time is given in minutes.		
+
+### Mean of Ride length (Mins)		
+```{r mean_ridelength, warning=FALSE }
+round(mean(year_2022v2$ride_length),3)
+```
+
+### Max and Min Ride length (Mins)					
+```{r maxminridelength, warning=FALSE}
+round(max(year_2022v2$ride_length),3)
+round(min(year_2022v2$ride_length),3)
+```
+### Mode of Day of week	
+1 = Sunday
+7 = Saturday
+```{r mode_dayofweek, warning=FALSE}
+mlv(year_2022v2$day_of_week, method = "mfv")
+```
+
+### Average ride length (mins) for members and casual riders
+```{r average_ridelength_member, warning=FALSE}
+year_2022v2 %>%
+   group_by(member_casual) %>% summarise(mean = round(mean(ride_length,na.rm=TRUE),3)) %>% kbl(caption = "Average ride length (mins)") %>% kable_paper("hover", full_width = F)
+```
+
+### Average Ride_length (mins) for users by Day of week
+```{r average_ridelength_dayofweek, warning=FALSE}
+year_2022v2 %>%
+   group_by(day_of_week, member_casual)%>%
+   summarise(mean = round(mean(ride_length,na.rm=TRUE),2)) %>% dcast(member_casual~day_of_week) %>% kbl(caption = "Average Ride_length (mins) by Day of week  and consumer segment") %>% kable_paper("hover", full_width = F)
+```
+
+### Number of rides for users by day of week
+```{r countride_dayofweek_member, warning=FALSE}
+year_2022v2 %>%
+   group_by(day_of_week, member_casual) %>% summarise(n = n()) %>% dcast(member_casual~day_of_week) %>% kbl(caption = "Number of rides by day of week and consumer segment") %>% kable_paper("hover", full_width = F)
+```
+
+## Descriptive analysis by season
+
+### Creation of Season column
+```{r season, warning=FALSE}
+year_2022v2$ride_season <- time2season(year_2022v2$started_at, out.fmt = "seasons")
+```
+
+### Mean ride length by season
+```{r mean_ridelength_season, warning=FALSE}
+year_2022v2 %>%
+   group_by(ride_season)%>%
+   summarise(mean = round(mean(ride_length,na.rm=TRUE),3)) %>% kbl(caption = "Mean ride Length by season (mins)") %>% kable_paper("hover", full_width = F)	
+```
+
+### Max Ride length by season	
+```{r max_ridelength_season, warning=FALSE}
+year_2022v2 %>%
+   group_by(ride_season)%>%
+   summarise(max = round(max(ride_length),3)) %>% kbl(caption = "Max ride length (mins) by season") %>% kable_paper("hover", full_width = F)
+```
+
+### Min Ride length by season
+```{r min_ridelength_season, warning=FALSE}
+year_2022v2 %>%
+   group_by(ride_season)%>%
+   summarise(min = round(min(year_2022v2$ride_length),3)) %>% kbl(caption = "Min ride length (mins) by season") %>% kable_paper("hover", full_width = F)
+```
+
+### Mode of season		
+```{r mode_season, warning=FALSE}
+mlv(year_2022v2$ride_season, method = "mfv")
+```
+
+### Average Ride length by season for members and casual riders.		
+```{r average_ridelength_season, warning=FALSE}
+year_2022v2 %>%
+   group_by(member_casual,ride_season)%>%
+   summarise(mean = round(mean(ride_length,na.rm=TRUE),2)) %>% dcast(member_casual~ride_season) %>% kbl(caption = "Average ride length by season and consumer segment") %>% kable_paper("hover", full_width = F)
+```
+
+### Number of rides for users by season.	
+```{r numrides_user_season, warning=FALSE}
+year_2022v2 %>%
+   group_by(ride_season) %>%
+   count(member_casual, sort = TRUE) %>% dcast(member_casual~ride_season) %>% kbl(caption = "Number of rides by season and consumer segment") %>% kable_paper("hover", full_width = F)
+```
+
+
+## Export summary file
+```{r export_summary, warning=FALSE}
+write.csv(year_2022v2, ".//results//cyclist_2022final.csv")
+```
+
