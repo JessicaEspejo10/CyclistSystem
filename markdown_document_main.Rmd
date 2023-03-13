@@ -58,7 +58,7 @@ We need to create our own function(x) to automate the performance of read_csv() 
 month_db <- list("january.csv", "february.csv", "march.csv", "april.csv", "may.csv", "june.csv", "july.csv", "august.csv", "september.csv", "october.csv", "november.csv", "december.csv")
 
 myfiles<-lapply(month_db, function(x){ 
-  read.table(unz(".\\monthly datasets\\monthly datasets.zip",x), header = TRUE, sep = ",")
+  read.table(unz(".\\monthly datasets.zip",x), header = TRUE, sep = ",")
   })
 
 ```
@@ -261,6 +261,6 @@ year_2022v2 %>%
 
 ## Export summary file
 ```{r export_summary, warning=FALSE}
-write.csv(year_2022v2, ".//results//cyclist_2022final.csv")
+write.csv(year_2022v2, ".//cyclist_2022final.csv")
 ```
 
