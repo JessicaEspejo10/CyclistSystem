@@ -111,8 +111,7 @@ myfilesT4novdec <-lapply(T4novdec, function(x){
 Merge monthly datasets in a full year dataset and verify the total number of rows
 
 ```{r merging}
-#year_2022 <- bind_rows(T1[1:3],T2mayapr[1:2],T2jun[1:1],T3jul[1:1],  T3aug[1:1],T3sep[1:1], T4oct[1:1], T4novdec[1:2] )
-year_2022 <- bind_rows(myfilesT1[1:3],myfilesT2jun[1:1], myfilesT3sep[1:1], myfilesT4oct[1:1], myfilesT4novdec[1:2] )
+year_2022 <- bind_rows(myfilesT1[1:3],myfilesT2may[1:1],myfilesapr[1:1],myfilesT2jun[1:1],myfilesT3jul[1:1], myfilesT3aug[1:1],myfilesT3sep[1:1], myfilesT4oct[1:1], myfilesT4novdec[1:2] )
 
 ```
 
