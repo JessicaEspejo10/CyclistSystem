@@ -55,15 +55,47 @@ We need to create our own function(x) to automate the performance of read_csv() 
 
 ```{r data_import}
 
-month_db <- list("january.csv", "february.csv", "march.csv", "april.csv", "may.csv", "june.csv", "july.csv", "august.csv", "september.csv", "october.csv", "november.csv", "december.csv")
+T1 <- list("january.csv", "february.csv", "march.csv")
+myfilesT1 <-lapply(T1, function(x){ 
+  read.table(unz(".\\T1.zip",x), header = TRUE, sep = ",")
+  })
 
-myfiles<-lapply(month_db, function(x){ 
-  read.table(unz(".\\monthly datasets.zip",x), header = TRUE, sep = ",")
+T2mayapr <- list("april.csv", "may.csv")
+myfilesT2mayapr<-lapply(T2mayapr, function(x){ 
+  read.table(unz(".\\T2-may-apr.zip",x), header = TRUE, sep = ",")
+  })
+
+T2jun <- list("june.csv")
+myfilesT2jun <-lapply(T2jun, function(x){ 
+  read.table(unz(".\\T2-jun.zip",x), header = TRUE, sep = ",")
+  })
+
+T3jul <- list("july.csv")
+myfilesT3jul <-lapply(T3jul, function(x){ 
+  read.table(unz(".\\T3-jul.zip",x), header = TRUE, sep = ",")
+  })
+
+T3aug <- list("august.csv")
+myfilesT3aug <-lapply(T3aug, function(x){ 
+  read.table(unz(".\\T3-aug.zip",x), header = TRUE, sep = ",")
+  })
+
+T3sep <- list("september.csv")
+myfilesT3sep <-lapply(T3sep, function(x){ 
+  read.table(unz(".\\T3-sep.zip",x), header = TRUE, sep = ",")
+  })
+
+T4oct <- list("october.csv")
+myfilesT4oct <-lapply(T4oct, function(x){ 
+  read.table(unz(".\\T4-oct.zip",x), header = TRUE, sep = ",")
+  })
+
+T4novdec <- list ("november.csv", "december.csv")
+myfilesT4novdec <-lapply(T4novdec, function(x){ 
+  read.table(unz(".\\T4-nov-dec.zip",x), header = TRUE, sep = ",")
   })
 
 ```
-
-
 
 ```{r data_import2, echo=FALSE, eval=FALSE}
 #january <- read.csv(file = ".\\monthly datasets\\january.csv", colClasses = c("character","character","POSIXct","POSIXct","character","character","character","character","numeric","numeric","numeric","numeric","character"))
@@ -74,7 +106,10 @@ myfiles<-lapply(month_db, function(x){
 Merge monthly datasets in a full year dataset and verify the total number of rows
 
 ```{r merging}
-year_2022 <- bind_rows(myfiles[1:12])
+#year_2022 <- bind_rows(T1[1:3],T2mayapr[1:2],T2jun[1:1],T3jul[1:1],  T3aug[1:1],T3sep[1:1], T4oct[1:1], T4novdec[1:2] )
+year_2022 <- bind_rows(myfilesT1[1:3],myfilesT2jun[1:1], myfilesT3sep[1:1], myfilesT4oct[1:1], myfilesT4novdec[1:2] )
+
+```
 ```
 
 ## Adding new columns: Ride length, Day of week, Ride month and Coordinates
