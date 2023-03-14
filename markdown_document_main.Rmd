@@ -60,9 +60,14 @@ myfilesT1 <-lapply(T1, function(x){
   read.table(unz(".\\T1.zip",x), header = TRUE, sep = ",")
   })
 
-T2mayapr <- list("april.csv", "may.csv")
-myfilesT2mayapr<-lapply(T2mayapr, function(x){ 
-  read.table(unz(".\\T2-may-apr.zip",x), header = TRUE, sep = ",")
+T2apr <- list("april.csv")
+myfilesT2apr<-lapply(T2apr, function(x){ 
+  read.table(unz(".\\T2-apr.zip",x), header = TRUE, sep = ",")
+  })
+
+T2may <- list("may.csv")
+myfilesT2may<-lapply(T2may, function(x){ 
+  read.table(unz(".\\T2-may.zip",x), header = TRUE, sep = ",")
   })
 
 T2jun <- list("june.csv")
@@ -110,7 +115,7 @@ Merge monthly datasets in a full year dataset and verify the total number of row
 year_2022 <- bind_rows(myfilesT1[1:3],myfilesT2jun[1:1], myfilesT3sep[1:1], myfilesT4oct[1:1], myfilesT4novdec[1:2] )
 
 ```
-```
+
 
 ## Adding new columns: Ride length, Day of week, Ride month and Coordinates
 
